@@ -100,17 +100,17 @@ namespace Editor
 
         private void addSunToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            Game.Project.CurrentLevel.AddSun(Game.Content);
         }
 
         private void addPlanetToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            Game.Project.CurrentLevel.AddWorld(Game.Content);
         }
 
         private void addMoonToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            Game.Project.CurrentLevel.AddMoon(Game.Content);
         }
     }
 }

@@ -61,15 +61,17 @@ namespace Editor
         {
             foreach (var world in worldModels)
             {
-                Vector3 moonPosition = world.Position + new Vector3(20, 0, 0);  // Moon offset from world
+                Vector3 moonPosition = world.Position + new Vector3(20, 0, 0);
 
-                Models moonModel = new Models(_content, "Moon", "MoonDiffuse", "MyShader", moonPosition,
-                    RandomHelper.GetRandomFloat(0.2f, 0.4f));
+                Models moonModel = new Models(_content, "Moon", "MoonDiffuse", "MyShader", moonPosition, RandomHelper.GetRandomFloat(0.2f, 0.4f));
+                moonModel.ParentWorld = world;
+                moonModel.OrbitSpeed = RandomHelper.GetRandomFloat(0.01f, 0.02f);
 
                 moonModels.Add(moonModel);
                 AddModel(moonModel);
             }
         }
+
 
         public void AddModel(Models _model)
         {

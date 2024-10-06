@@ -18,6 +18,8 @@ namespace Editor
         public Vector3 Position { get => m_position; set { m_position = value; } }
         public Vector3 Rotation { get => m_rotation; set { m_rotation = value; } }
         public float Scale { get; set; }
+        public Models ParentWorld { get; set; }  
+        public float OrbitSpeed { get; set; }
 
         //Texturing
         public Texture Texture { get; set; }
@@ -68,7 +70,14 @@ namespace Editor
 
         public void Render(Matrix _view, Matrix _projection)
         {
-            m_position.X += 0.00f;
+             if (ParentWorld != null)
+                {
+                    float orbitAngle = OrbitSpeed;
+                    Matrix orbitMatrix = Matrix.CreateRotationY(orbitAngle);
+                    m_position = Vector3.Transform(m_position - ParentWorld.Position, orbitMatrix) + ParentWorld.Position;
+                }
+
+                m_position.X += 0.00f;
             m_rotation.Y += 0.005f;
             Shader.Parameters["World"].SetValue(GetTransform());
             Shader.Parameters["WorldViewProjection"].SetValue(GetTransform() * _view * _projection);

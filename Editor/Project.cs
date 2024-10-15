@@ -39,7 +39,10 @@ namespace Editor
             CurrentLevel.LoadContent(_content);
             Levels.Add(CurrentLevel);
         }
-
+        public void Update(float _delta)
+        {
+            CurrentLevel?.Update(_delta);
+        }
         public void Render()
         {
             CurrentLevel.Render();

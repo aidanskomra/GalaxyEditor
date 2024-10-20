@@ -29,7 +29,6 @@ namespace Editor
                 Name += ".oce";
             }
 
-            //Add a default level
             AddLevel(_content);
         }
 

@@ -1,129 +1,114 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Editor;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Content;
-using Editor;
+using System;
 using System.IO;
-using System.ComponentModel;
 
 namespace Editor
 {
-    class Models : INotifyPropertyChanged, ISerializable
+    internal class Models : ISerializable, IRenderable, ISelectable, ISoundEmitter
     {
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        [Browsable(false)]
+        // Accessors
         public Model Mesh { get; set; }
-
-        [Browsable(false)]
-        public Texture Texture { get; set; }
-
-        [Browsable(false)]
-        public Effect Shader { get; set; }
-
-        [Category("Appearance")]
-        [Description("Diffuse texture of the model.")]
-        [TypeConverter(typeof(DiffuseTextureTypeConverter))]
-        public string DiffuseTextureName
-        {
-            get => _diffuseTextureName;
-            set => SetProperty(ref _diffuseTextureName, value, nameof(DiffuseTextureName));
-        }
-        private string _diffuseTextureName;
-
-        [Category("State")]
-        [Description("Selection status.")]
+        public Material Material { get; private set; }
+        public SFXInstance[] SoundEffects { get; private set; } = null;
+        public Vector3 Position { get => m_position; set { m_position = value; } }
+        public Vector3 Rotation { get => m_rotation; set { m_rotation = value; } }
+        public float Scale { get; set; }
         public bool Selected
         {
-            get => _selected;
-            set => SetProperty(ref _selected, value, nameof(Selected));
+            get { return m_selected; }
+            set
+            {
+                if (m_selected != value)
+                {
+                    m_selected = value;
+                    SelectedDirty = true;
+                }
+            }
         }
-        private bool _selected;
+        public string Name { get; set; }
+        public static bool SelectedDirty { get; set; } = false;
 
-        [Category("Transformation")]
-        [Description("Position of the model in world space.")]
-        public Vector3 Position
-        {
-            get => _position;
-            set => SetProperty(ref _position, value, nameof(Position));
-        }
-        private Vector3 _position;
-
-        [Category("Transformation")]
-        [Description("Rotation of the model.")]
-        public Vector3 Rotation
-        {
-            get => _rotation;
-            set => SetProperty(ref _rotation, value, nameof(Rotation));
-        }
-        private Vector3 _rotation;
-
-        [Category("Transformation")]
-        [Description("Scale of the model.")]
-        public float Scale
-        {
-            get => _scale;
-            set => SetProperty(ref _scale, value, nameof(Scale));
-        }
-        private float _scale;
-
-        //Members
+        // Members
         private Vector3 m_position;
         private Vector3 m_rotation;
+        private bool m_selected;
 
         public Models()
         {
+
+        }
+        public Models(
+            GameEditor _game, string _model, string _texture, string _effect, Vector3 _position, float _scale)
+        {
+            Create(_game, _model, _texture, _effect, _position, _scale);
         }
 
-        public Models(ContentManager _content, string _model, string _texture, string _effect, Vector3 _position, float _scale)
+        private void Create(GameEditor _game, string _model, string _texture,
+                            string _effect, Vector3 _position, float _scale)
         {
-            Create(_content, _model, _texture, _effect, _position, _scale);
-            DiffuseTextureName = _texture;
-        }
-            public void Create(ContentManager _content, string _model, string _texture, string _effect, Vector3 _position, float _scale)
-        {
-            Mesh = _content.Load<Model>(_model);
+            string fileName = Path.Combine(_game.Project.Folder, _game.Project.ContentFolder,
+                                           _game.Project.AssetFolder, _model);
+            Mesh = _game.Content.Load<Model>(fileName);
             Mesh.Tag = _model;
-            Texture = _content.Load<Texture>(_texture);
-            Texture.Tag = _texture;
-            Shader = _content.Load<Effect>(_effect);
-            Shader.Tag = _effect;
-            SetShader(Shader);
+            Name = _model;
+            Material = new Material();
+            SetTexture(_game, _texture);
+            SetShader(_game, _effect);
             m_position = _position;
             Scale = _scale;
-            DiffuseTextureName = _texture;
-        }
-
-        private void SetProperty<T>(ref T field, T value, string propertyName)
-        {
-            if (!Equals(field, value))
-            {
-                field = value;
-                OnPropertyChanged(propertyName);
-            }
-        }
-
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            SoundEffects ??= new SFXInstance[Enum.GetNames(typeof(SoundEffectTypes)).Length]; // Compound assignment
         }
 
         public void SetShader(Effect _effect)
         {
-            Shader = _effect;
+            Material.Effect = _effect;
             foreach (ModelMesh mesh in Mesh.Meshes)
             {
                 foreach (ModelMeshPart meshPart in mesh.MeshParts)
                 {
-                    meshPart.Effect = Shader;
+                    meshPart.Effect = Material.Effect;
                 }
             }
         }
+
+        public void SetTexture(GameEditor _game, string _texture)
+        {
+            if (_texture == "DefaultTexture")
+            {
+                Material.Diffuse = _game.DefaultTexture;
+            }
+            else
+            {
+                string fileName = Path.Combine(_game.Project.Folder,
+                                               _game.Project.ContentFolder,
+                                               _game.Project.AssetFolder,
+                                               _texture);
+                Material.Diffuse = _game.Content.Load<Texture>(fileName);
+            }
+            Material.Diffuse.Tag = _texture;
+        }
+
+        public void SetShader(GameEditor _game, string _shader)
+        {
+            if (_shader == "DefaultEffect")
+            {
+                Material.Effect = _game.DefaultEffect;
+            }
+            else
+            {
+                string fileName = Path.Combine(_game.Project.Folder,
+                                               _game.Project.ContentFolder,
+                                               _game.Project.AssetFolder,
+                                               _shader);
+                Material.Effect = _game.Content.Load<Effect>(fileName);
+            }
+            Material.Effect.Tag = _shader;
+            SetShader(Material.Effect);
+        }
+
         public void Translate(Vector3 _translate, Camera _camera)
         {
             float distance = Vector3.Distance(_camera.Target, _camera.Position);
@@ -137,24 +122,21 @@ namespace Editor
             Position += up * _translate.Y * distance;
             Position += forward * _translate.Z * 100f;
         }
+
         public void Rotate(Vector3 _rotate)
         {
             Rotation += _rotate;
         }
+
         public Matrix GetTransform()
         {
             return Matrix.CreateScale(Scale) *
-                   Matrix.CreateFromYawPitchRoll(Rotation.Y, Rotation.X, Rotation.Z) *
-                   Matrix.CreateTranslation(Position);
+                    Matrix.CreateFromYawPitchRoll(Rotation.Y, Rotation.X, Rotation.Z) *
+                    Matrix.CreateTranslation(Position);
         }
 
-        public void Render(Matrix _view, Matrix _projection)
+        public void Render()
         {
-            Shader.Parameters["World"].SetValue(GetTransform());
-            Shader.Parameters["WorldViewProjection"].SetValue(GetTransform() * _view * _projection);
-            Shader.Parameters["Texture"].SetValue(Texture);
-            Shader.Parameters["Tint"].SetValue(Selected);
-
             foreach (ModelMesh mesh in Mesh.Meshes)
             {
                 mesh.Draw();
@@ -164,14 +146,28 @@ namespace Editor
         public void Serialize(BinaryWriter _stream)
         {
             _stream.Write(Mesh.Tag.ToString());
-            _stream.Write(Texture.Tag.ToString());
-            _stream.Write(Shader.Tag.ToString());
+            _stream.Write(Material.Diffuse.Tag.ToString());
+            _stream.Write(Material.Effect.Tag.ToString());
             HelpSerialize.Vec3(_stream, Position);
             HelpSerialize.Vec3(_stream, Rotation);
             _stream.Write(Scale);
+            _stream.Write(Selected);
+            _stream.Write(Name);
+            _stream.Write(SoundEffects.Length);
+            foreach (var sfi in SoundEffects)
+            {
+                if (sfi == null)
+                {
+                    _stream.Write("empty");
+                }
+                else
+                {
+                    _stream.Write(sfi.Name);
+                }
+            }
         }
 
-        public void Deserialize(BinaryReader _stream, ContentManager _content)
+        public void Deserialize(BinaryReader _stream, GameEditor _game)
         {
             string mesh = _stream.ReadString();
             string texture = _stream.ReadString();
@@ -179,7 +175,21 @@ namespace Editor
             Position = HelpDeserialize.Vec3(_stream);
             Rotation = HelpDeserialize.Vec3(_stream);
             Scale = _stream.ReadSingle();
-            Create(_content, mesh, texture, shader, Position, Scale);
+            Selected = _stream.ReadBoolean();
+            Name = _stream.ReadString();
+            //Material = new Material();
+            int sfxCount = _stream.ReadInt32();
+            SoundEffects = new SFXInstance[sfxCount];
+            for (int count = 0; count < sfxCount; count++)
+            {
+                string assetName = _stream.ReadString();
+                if (assetName != "empty")
+                {
+                    SoundEffects[count] = SFXInstance.Create(_game, assetName);
+                }
+            }
+
+            Create(_game, mesh, texture, shader, Position, Scale);
         }
     }
 }

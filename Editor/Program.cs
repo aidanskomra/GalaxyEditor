@@ -3,9 +3,8 @@ using System;
 using System.Threading;
 
 // Set STA Thread mode, for OpenFileDialog to work
-Thread t = Thread.CurrentThread;
-t.SetApartmentState(ApartmentState.Unknown);
-t.SetApartmentState(ApartmentState.STA);
+Thread.CurrentThread.SetApartmentState(ApartmentState.Unknown);
+Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
 
 FormEditor editor = new();
 editor.Game = new GameEditor(editor);

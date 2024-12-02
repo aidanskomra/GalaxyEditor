@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using System.Diagnostics;
 
 
 namespace Editor
@@ -17,9 +12,7 @@ namespace Editor
         private SpriteFont m_fontArial18 = null;
         private SpriteFont m_fontArial20 = null;
 
-        public FontController()
-        {
-        }
+        public FontController() { }
 
         public void LoadContent(ContentManager _content)
         {
@@ -30,20 +23,17 @@ namespace Editor
 
         public void Draw(SpriteBatch _spriteBatch, int _size, string _text, Vector2 _position, Color _color)
         {
-            switch(_size)
+            switch (_size)
             {
                 case 16:
                     _spriteBatch.DrawString(m_fontArial16, _text, _position, _color);
                     break;
-
                 case 18:
                     _spriteBatch.DrawString(m_fontArial18, _text, _position, _color);
                     break;
-
                 case 20:
                     _spriteBatch.DrawString(m_fontArial20, _text, _position, _color);
                     break;
-
                 default:
                     Debug.Assert(true);
                     break;
